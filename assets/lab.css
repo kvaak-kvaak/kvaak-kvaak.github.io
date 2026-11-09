@@ -1,0 +1,80 @@
+:root {color-scheme: light; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:16px; line-height:1.45; background:#f6f7fa; color:#192333}
+* {box-sizing:border-box}
+html {scroll-behavior:auto}
+body {margin:0; min-width:280px}
+a {color:#125fa8}
+a:focus-visible,button:focus-visible {outline:3px solid #196ad5;outline-offset:3px}
+button {font:inherit; cursor:pointer}
+.home-shell {max-width:1000px;margin:0 auto;padding:28px 18px 80px}
+.hero {background:#172d43;color:#fff;padding:30px 24px;border-radius:18px;margin-bottom:18px}
+.hero h1 {font-size:clamp(1.6rem,4vw,2.6rem);margin:0 0 8px;line-height:1.12}
+.hero p {color:#d7e6f4;margin:0;max-width:740px}
+.callout {background:#ecf4ff;border-left:4px solid #4487d4;padding:14px 16px;border-radius:5px;margin:14px 0 22px}
+.group {background:#fff;border:1px solid #d8e0e8;border-radius:14px;padding:20px;margin:15px 0}
+.group h2 {font-size:1.25rem;margin:0 0 6px}
+.group>p {margin:0 0 12px;color:#4b5c6c}
+.variant {display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-top:1px solid #e6ebf0;padding:12px 0}
+.variant strong {font-size:.94rem}
+.variant .description {font-size:.84rem;color:#5c6b7b;display:block;max-width:600px}
+.actions {display:flex;gap:8px}
+.actions a {border:1px solid #c7d6e5;border-radius:8px;padding:7px 12px;text-decoration:none;font-size:.88rem;font-weight:650;white-space:nowrap}
+.actions a.primary {background:#205a92;border-color:#205a92;color:white}
+.actions a:hover {background:#edf5fd;color:#123c67}
+.actions a.primary:hover {background:#174671;color:white}
+.smallprint {font-size:.85rem;color:#59697a}
+/* A clean case has no sticky or fixed UI, no animation, and no JavaScript. */
+.test-head {background:#172d43;color:#fff;padding:20px 16px 18px}
+.test-head .inner {max-width:780px;margin:auto}
+.test-head .kicker {font-size:.75rem;letter-spacing:.12em;font-weight:750;color:#abcde4;text-transform:uppercase}
+.test-head h1 {font-size:clamp(1.3rem,5vw,1.8rem);line-height:1.18;margin:5px 0}
+.test-head p {font-size:.9rem;color:#d4e4f1;margin:6px 0 0}
+.test-head .meta {display:inline-block;border:1px solid #7996b1;padding:2px 8px;border-radius:20px;font-size:.72rem;margin-top:8px}
+.test-body {max-width:780px;margin:0 auto;padding:0 12px 34px}
+.ruler {display:block;position:relative;height:8px;background:repeating-linear-gradient(90deg, #b8c6d6 0 3px, #f7fafc 3px 13px);border-top:1px solid #ccd6e0; opacity:.85}
+.scroll-row {background:#fff;border:1px solid #d9e1e9;border-left:5px solid #ced9e6;margin:11px 0;padding:13px 16px;min-height:99px}
+.scroll-row:nth-child(4n+1){border-left-color:#3e92b4}
+.scroll-row:nth-child(4n+2){border-left-color:#d09c54}
+.scroll-row:nth-child(4n+3){border-left-color:#8168b9}
+.scroll-row:nth-child(4n+4){border-left-color:#709b7a}
+.scroll-row h2 {font-size:1rem;margin:0 0 4px;line-height:1.1;font-variant-numeric:tabular-nums}
+.scroll-row p {font-size:.89rem;color:#4b5867;margin:0}
+.marker-line {font-size:.67rem;font-variant-numeric:tabular-nums;letter-spacing:.04em;color:#64778a;border-top:1px dashed #cad6e0;margin-top:9px;padding-top:4px}
+.test-foot {max-width:780px;margin:12px auto 50px;padding:14px 18px;background:#e4ebf3;border-radius:10px;font-size:.85rem}
+.test-foot a {margin-right:14px}
+/* CSS effects variants keep identical DOM and geometry. */
+.effect-shadows .scroll-row {box-shadow:0 10px 21px rgba(22,43,65,.19),0 2px 4px rgba(22,43,65,.13)}
+.effect-filters .scroll-row {filter:contrast(1.12) saturate(1.25)}
+.effect-transforms .scroll-row {transform:translateZ(0);will-change:transform}
+/* Scroll layer variants. */
+.layer-sticky .test-head {position:sticky;top:0;z-index:2}
+.layer-fixed .floating-marker {position:fixed;right:9px;top:16%;z-index:3;background:#fcf1b6;color:#382a06;padding:9px;border:2px solid #c9a44a;border-radius:8px;width:112px;font-size:.78rem;text-align:center}
+.nested-zone {height:64vh;overflow-y:auto;overscroll-behavior:contain;border:3px solid #386a91;margin:15px 0;background:#edf3f8;padding:0 8px}
+.nested-zone .scroll-row {min-height:90px}
+.zone-label {background:#d5e7f4;padding:10px;margin-top:14px;border-radius:7px;font-weight:700}
+/* Image workloads. */
+.image-row {background:#fff;border:1px solid #d6dfe9;border-left:5px solid #5e8eaf;margin:13px 0;padding:10px}
+.image-row h2 {font-size:.85rem;margin:0 0 8px}
+.image-row img {display:block;width:100%;height:195px;object-fit:cover;background:#d7e1ec}
+.image-large .image-row img {height:440px}
+.image-row .marker-line {margin-top:8px}
+/* Motion test: the floating marker is intentionally a compositor candidate. */
+.motion-track {position:fixed;bottom:18px;left:12px;right:12px;height:58px;z-index:4;background:rgba(20,39,58,.93);border:2px solid #a0c3dc;border-radius:11px;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.17);pointer-events:none}
+.motion-track .caption {font-size:10px;position:absolute;top:2px;left:10px;color:#d2e8fb}
+.motion-track .line {position:absolute;top:30px;left:12px;right:12px;border-top:1px dashed #7298b6}
+.motion-track .dot {position:absolute;top:18px;left:12px;height:23px;width:23px;border-radius:5px;background:#fbd15d;transform:translate3d(0,0,0);will-change:transform}
+.motion-css .motion-track .dot {animation:motion-sweep 2.4s linear infinite alternate}
+@keyframes motion-sweep {from{transform:translate3d(0,0,0)}to{transform:translate3d(calc(100vw - 71px),0,0)}}
+/* Measured pages deliberately add a fixed HUD and a small amount of JS load. */
+.measure-hud {position:fixed;z-index:10000;top:6px;right:6px;width:min(244px,calc(100vw - 14px));background:rgba(13,30,45,.96);color:#fff;border:1px solid #7ca8c9;border-radius:10px;padding:8px 10px;font:11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;box-shadow:0 5px 16px rgba(0,0,0,.25)}
+.measure-hud .heading {font-weight:800;font-size:12px;letter-spacing:.03em;color:#c0e3fc;margin-bottom:5px}
+.measure-hud .metric {display:flex;justify-content:space-between;gap:4px}
+.measure-hud .value {font-weight:700;font-variant-numeric:tabular-nums}
+.measure-hud .controls {display:flex;gap:4px;margin-top:7px}
+.measure-hud button {border:1px solid #84a9c5;background:#294860;color:white;font:11px/1.2 inherit;border-radius:4px;padding:5px 7px;min-height:26px}
+.measure-hud button:disabled {opacity:.38;cursor:default}
+.measure-hud .hint {margin-top:5px;color:#c5d9e7;font-size:9px}
+.measure-hud .state {color:#9ad9a9}
+.measure-hud details summary {cursor:pointer;font-size:10px;margin-top:5px}
+.measure-hud .copyarea {display:none;width:100%;height:100px;overflow:auto;font:9px monospace;margin-top:5px}
+.measure-hud details[open] .copyarea {display:block}
+@media(max-width:380px){.test-head {padding-right:14px}.home-shell{padding:16px 10px}.group{padding:13px}.variant{align-items:flex-start}.actions a{padding:6px 8px}}
