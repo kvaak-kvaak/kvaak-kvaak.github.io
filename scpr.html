@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scroll probe</title>
+<style>
+:root{--bg:#fff;--fg:#1b1b1b;--mut:#5f6368;--card:#eceff4;--acc:#0b57d0;--line:#d0d4da}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161616;--fg:#e8e8e8;--mut:#9aa0a6;--card:#262a30;--acc:#8ab4f8;--line:#3a3f46}}
+:root[data-theme="dark"]{--bg:#161616;--fg:#e8e8e8;--mut:#9aa0a6;--card:#262a30;--acc:#8ab4f8;--line:#3a3f46}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:16px}
+h1{font-size:20px;margin:0 0 6px}
+p{margin:6px 0;color:var(--mut)}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+select,button{font:inherit;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
+button.go{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+#status{font-weight:600;color:var(--acc);min-height:1.4em}
+pre{white-space:pre-wrap;word-break:break-word;background:var(--card);padding:12px;border-radius:8px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;max-width:100%;overflow-x:auto}
+.row{padding:18px 16px;border-top:1px solid var(--line)}
+.card{display:flex;gap:12px;align-items:center;margin:12px 16px;padding:14px;background:var(--card);border-radius:18px;box-shadow:0 10px 28px rgba(0,0,0,.28)}
+.card img{width:56px;height:56px;flex:none}
+.card b{display:block}
+.card span{color:var(--mut);font-size:14px}
+</style>
+</head>
+<body>
+<header>
+<h1>Scroll probe</h1>
+<p>Measures what this browser delivers while you scroll: frame cadence, scroll steps and touch event timing. Run the same settings in each browser and compare the results.</p>
+<p>Tap Start and keep your hands off for 3 s. When the status says GO, scroll this page with long, steady, full-screen drags (finger down 1–2 s each, no flicks) until it stops and returns here.</p>
+<div class="ctl">
+<select id="kind"><option value="light">Light list</option><option value="heavy">Heavy cards (shadows, gradients)</option></select>
+<select id="secs"><option value="20">20 s</option><option value="30" selected>30 s</option><option value="45">45 s</option></select>
+<button id="start" class="go" type="button">Start</button>
+<button id="copy" type="button">Copy results</button>
+</div>
+<div id="status">Ready</div>
+<pre id="out">Results appear here.</pre>
+</header>
+<main id="list"></main>
+<script>
+(function () {
+  var $ = function (i) { return document.getElementById(i); };
+  var list = $("list"), out = $("out"), status = $("status");
+  var running = false, kind = "light", frames = [], strokes = [], cur = null, down = false, raf = 0;
+  var SVG = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e91e63"/><stop offset="1" stop-color="#3f51b5"/></linearGradient></defs><circle cx="28" cy="28" r="26" fill="url(#g)"/></svg>');
+
+  function build(k) {
+    var h = "", i;
+    if (k === "heavy") {
+      for (i = 1; i <= 400; i++) h += '<div class="card"><img alt="" src="' + SVG + '"><div><b>Card ' + i + '</b><span>The quick brown fox jumps over the lazy dog, again and again.</span></div></div>';
+    } else {
+      for (i = 1; i <= 3000; i++) h += '<div class="row">Row ' + i + ' – the quick brown fox jumps over the lazy dog</div>';
+    }
+    list.innerHTML = h;
+  }
+  function pct(a, p) {
+    if (!a.length) return NaN;
+    var k = (a.length - 1) * p / 100, f = Math.floor(k), c = Math.min(f + 1, a.length - 1);
+    return a[f] + (a[c] - a[f]) * (k - f);
+  }
+  function num(a, b) { return a - b; }
+  function tick(t) {
+    if (!running) return;
+    frames.push([t, window.pageYOffset || document.documentElement.scrollTop || 0, down ? 1 : 0]);
+    raf = requestAnimationFrame(tick);
+  }
+  var cnt = { s: 0, m: 0, e: 0, c: 0 };
+  window.addEventListener("touchstart", function () { if (!running) return; cnt.s++; down = true; cur = []; }, { passive: true });
+  window.addEventListener("touchmove", function (e) { if (running) { cnt.m++; if (cur) cur.push(e.timeStamp); } }, { passive: true });
+  function up() { down = false; if (cur && cur.length) strokes.push(cur); cur = null; }
+  window.addEventListener("touchend", function () { if (running) cnt.e++; up(); }, { passive: true });
+  window.addEventListener("touchcancel", function () { if (running) cnt.c++; up(); }, { passive: true });
+
+  function group(L, name, rs, nom, showStill) {
+    if (rs.length < 5) { L.push(name + ": too few frames (" + rs.length + ")"); return; }
+    var d = rs.map(function (r) { return r.dt; }).sort(num);
+    var s = 0, o15 = 0, o2 = 0, o4 = 0, still = 0, jit = 0, ab = 0, prev = null;
+    rs.forEach(function (r) {
+      s += r.dt;
+      if (r.dt > 1.5 * nom) o15++;
+      if (r.dt > 2 * nom) o2++;
+      if (r.dt > 4 * nom) o4++;
+      if (Math.abs(r.dy) < 0.01) still++;
+      if (prev !== null) { jit += Math.abs(r.dy - prev); ab += Math.abs(r.dy); }
+      prev = r.dy;
+    });
+    L.push(name + ": " + rs.length + " frames, avg " + (s / rs.length).toFixed(1) + " ms, p95 " + pct(d, 95).toFixed(1) +
+      ", max " + d[d.length - 1].toFixed(1) + " | slow >1.5x " + o15 + ", >2x " + o2 + ", >4x " + o4 +
+      (showStill ? " | no movement " + Math.round(100 * still / rs.length) + "%" : "") +
+      " | judder " + (ab > 0 ? (jit / ab).toFixed(2) : "n/a"));
+  }
+  function summarize() {
+    var L = [], rows = [], i, a, b;
+    L.push("UA: " + navigator.userAgent);
+    L.push("screen " + screen.width + "x" + screen.height + " @" + (window.devicePixelRatio || 1) + "x | load: " + kind);
+    for (i = 1; i < frames.length; i++) {
+      a = frames[i - 1]; b = frames[i];
+      rows.push({ dt: b[0] - a[0], dy: b[1] - a[1], m: b[2] });
+    }
+    var idle = rows.filter(function (r) { return !r.m && Math.abs(r.dy) < 0.5; }).map(function (r) { return r.dt; }).sort(num);
+    var all = rows.map(function (r) { return r.dt; }).sort(num);
+    var nom = idle.length >= 20 ? pct(idle, 50) : pct(all, 50);
+    L.push("frame interval with no touch: median " + nom.toFixed(2) + " ms (about " + (1000 / nom).toFixed(0) + " Hz), " + idle.length + " idle frames");
+    group(L, "idle (page still, finger up)", rows.filter(function (r) { return !r.m && Math.abs(r.dy) < 0.5; }), nom, false);
+    group(L, "scrolling (page moved, finger state ignored)", rows.filter(function (r) { return Math.abs(r.dy) >= 0.5; }), nom, false);
+    group(L, "finger down, page still", rows.filter(function (r) { return r.m && Math.abs(r.dy) < 0.5; }), nom, false);
+    var iv = [];
+    strokes.forEach(function (s) {
+      if (s.length < 8) return;
+      for (i = 2; i < s.length - 2; i++) iv.push(s[i] - s[i - 1]);
+    });
+    iv.sort(num);
+    if (iv.length >= 10) {
+      var med = pct(iv, 50), o2 = iv.filter(function (x) { return x > 2 * med; }).length, bu = iv.filter(function (x) { return x < 0.3 * med; }).length;
+      L.push("touchmove as delivered to the page: median " + med.toFixed(2) + " ms (about " + (1000 / med).toFixed(0) + " Hz), p95 " +
+        pct(iv, 95).toFixed(1) + ", max " + iv[iv.length - 1].toFixed(1) + " | >2x " + (100 * o2 / iv.length).toFixed(1) + "%, bunched " + (100 * bu / iv.length).toFixed(1) + "%");
+    } else {
+      L.push("touchmove: too few events (" + iv.length + ") - the engine may batch or not send them while scrolling");
+    }
+    L.push("touch events seen: start " + cnt.s + ", move " + cnt.m + ", end " + cnt.e + ", cancel " + cnt.c);
+    L.push("note: engines may batch touch events per frame or round scroll positions, so read these as what the page sees, not raw hardware.");
+    return L.join("\n");
+  }
+  function finish() {
+    if (!running) return;
+    running = false;
+    cancelAnimationFrame(raf);
+    up();
+    window.scrollTo(0, 0);
+    status.textContent = "Done";
+    out.textContent = summarize();
+  }
+  $("start").addEventListener("click", function () {
+    if (running) return;
+    kind = $("kind").value;
+    var secs = parseInt($("secs").value, 10) || 30;
+    build(kind);
+    window.scrollTo(0, 0);
+    frames = []; strokes = []; cur = null; down = false; cnt = { s: 0, m: 0, e: 0, c: 0 };
+    out.textContent = "Recording…";
+    status.textContent = "Hands off for 3 s…";
+    running = true;
+    raf = requestAnimationFrame(tick);
+    setTimeout(function () { if (running) status.textContent = "GO – scroll now"; }, 3000);
+    setTimeout(finish, (3 + secs) * 1000);
+  });
+  $("copy").addEventListener("click", function () {
+    var txt = out.textContent;
+    function fallback() {
+      var r = document.createRange();
+      r.selectNodeContents(out);
+      var s = window.getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+      status.textContent = "Selected – use the browser’s copy command";
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () { status.textContent = "Copied"; }, fallback);
+    } else { fallback(); }
+  });
+})();
+</script>
+</body>
+</html>
